@@ -1,0 +1,25 @@
+# --- Environment files ---
+ai-dev-env/config/env.sh
+.env
+.env.*
+
+# --- Python ---
+__pycache__/
+*.pyc
+
+# --- Virtual envs ---
+.venv/
+venv/
+
+# --- Aider ---
+.aider*
+.aider.chat.history.md
+
+# --- OS ---
+.DS_Store
+
+# --- ADE Projects (generated) ---
+projects/
+
+# --- Optional: allow placeholder ---
+!projects/.keep

@@ -1,0 +1,19 @@
+model_list:
+
+  # --- LOCAL ---
+  - model_name: local-coder
+    litellm_params:
+      model: ${ADE_MODEL_LOCAL}
+      api_base: http://localhost:11434
+
+  # --- CLOUD (DeepSeek reasoning) ---
+  - model_name: cloud-reason
+    litellm_params:
+      model: ${ADE_MODEL_CLOUD_REASON}
+      api_key: ${OPENROUTER_API_KEY}
+
+  # --- CLOUD (fast coder) ---
+  - model_name: cloud-fast
+    litellm_params:
+      model: ${ADE_MODEL_CLOUD_FAST}
+      api_key: ${OPENROUTER_API_KEY}
