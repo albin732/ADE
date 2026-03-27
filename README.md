@@ -4,13 +4,13 @@
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Platform](https://img.shields.io/badge/platform-linux%20%7C%20windows-lightgrey)
 
-A **controlled, test-driven AI development environment** for safe and scalable code generation.
+A **controlled, test-driven AI development environment** for safe, scalable, and reliable code generation.
 
 Built with:
 
-* 🧠 Aider (code generation & editing)
-* 🤖 Ollama (local LLMs)
-* ⚙️ Custom orchestration scripts
+- 🧠 Aider (AI code editing engine)
+- 🤖 Ollama (local LLM runtime)
+- ⚙️ Custom orchestration scripts
 
 ---
 
@@ -23,12 +23,12 @@ Unlike typical AI coding tools:
 | Copilot / ChatGPT | Suggest code           |
 | ADE               | Builds + tests + fixes |
 
-ADE provides:
+ADE focuses on:
 
-* ✔ Controlled edits (no chaos)
-* ✔ Test-driven corrections
-* ✔ Minimal, scoped changes
-* ✔ Safe automation loop
+- ✔ Deterministic behavior
+- ✔ Minimal, scoped changes
+- ✔ Test-driven corrections
+- ✔ Safe automation loop
 
 ---
 
@@ -41,108 +41,87 @@ runai demo_api "create Item API"
 
 Result:
 
-* Model created
-* API endpoints added
-* Tests generated
-* All tests passing ✅
+- API created
+- Tests generated
+- Tests passing ✅
 
 ---
 
-# 🧱 Architecture
+# 📦 Requirements
 
-```
-ADE/
-├── ai-dev-env/       # core system
-├── projects/         # generated apps (ignored)
-├── CONTRIBUTING.md
-└── README.md
-```
+## 🧠 Core
 
----
+- Python 3.10+
+- Git
+- Aider
+- Ollama
 
-## 🧠 Execution Flow
-
-```
-User (runai)
-   ↓
-run_aider.sh
-   ↓
-Aider (LLM)
-   ↓
-Code Generation / Edit
-   ↓
-pytest (test loop)
-   ↓
-Fix (if needed)
-   ↓
-Stable Output
-```
-
----
-
-# 🚀 How to Use
-
----
-
-## 🧠 Setup
+Install:
 
 ```bash
-git clone git@github.com:albin732/ADE.git
+pip install aider-chat
+```
+
+Install Ollama:
+👉 https://ollama.com
+
+---
+
+## 🧠 Model Setup
+
+ADE is **model-agnostic**.
+
+```bash
+ollama pull <model_name>
+```
+
+Example:
+
+```bash
+ollama pull qwen2.5-coder:7b
+```
+
+---
+
+# 🛠 Setup
+
+---
+
+## 🐧 Linux / macOS
+
+```bash
+git clone https://github.com/albin732/ADE.git
 cd ADE
-
-cp ai-dev-env/config/env.sample.sh ai-dev-env/config/env.sh
+./setup.sh
 ```
 
 ---
 
-## 🧩 Enable Commands
-
-### 🐧 Linux / macOS
-
-```bash
-export ADE_BASE="$HOME/path/to/ADE"
-source "$ADE_BASE/ai-dev-env/config/env.sh"
-
-runai() {
-  $ADE_BASE/ai-dev-env/scripts/run_aider.sh "$@"
-}
-
-newproj() {
-  $ADE_BASE/ai-dev-env/scripts/create_project.sh "$1"
-}
-
-source ~/.bashrc
-```
-
----
-
-### 🪟 Windows (PowerShell)
+## 🪟 Windows (PowerShell)
 
 ```powershell
-$env:ADE_BASE="C:\path\to\ADE"
-
-function runai {
-    & "$env:ADE_BASE\ai-dev-env\scripts\run_aider.sh" $args
-}
-
-function newproj {
-    & "$env:ADE_BASE\ai-dev-env\scripts\create_project.sh" $args
-}
-
-. $PROFILE
+git clone https://github.com/albin732/ADE.git
+cd ADE
+.\setup.ps1
 ```
 
-> 💡 Windows users: Recommended to use WSL or Git Bash.
+> 💡 Recommended: Use **WSL (Windows Subsystem for Linux)** for full compatibility.
 
 ---
 
-# ⚙️ Commands
+# 🚀 Usage
+
+---
 
 ## 📦 Create Project
 
 ```bash
-newproj my_api
+newproj my_api                # default (django)
+newproj my_api --type django
 ```
+
+> ⚠️ Current support: **Django (DRF-based backend)**
+> Multi-framework support is planned.
 
 ---
 
@@ -180,23 +159,33 @@ pytest -v
 
 ---
 
-# 🔁 What Happens Internally
+# 🧠 Execution Flow
 
 ```
-1. Load project
-2. Send task to AI
-3. Generate/update code
-4. Run tests
-5. Detect failures
-6. Fix root cause only
-7. Repeat (max 3 times)
+runai
+  ↓
+Aider
+  ↓
+Code change
+  ↓
+pytest
+  ↓
+Fix loop
+  ↓
+Stable output
 ```
 
 ---
 
 # 🔐 Behavior Control
 
-Edit `env.sh`:
+Configured in:
+
+```
+ai-dev-env/config/env.sh
+```
+
+Example:
 
 ```bash
 ADE_ALLOW_TEST_GEN=true
@@ -206,28 +195,34 @@ ADE_ALLOW_BUG_FIX=true
 
 ---
 
-# 📁 Notes
+# 📁 Project Structure
 
-* `projects/` is ignored (local only)
-* `env.sh` is private
-* Use `env.sample.sh`
+```
+ADE/
+├── ai-dev-env/
+├── projects/        # generated apps (ignored)
+├── setup.sh
+├── setup.ps1
+├── CONTRIBUTING.md
+└── README.md
+```
 
 ---
 
 # 🛠 Troubleshooting
 
-### ❌ Model not found
+### ❌ Commands not working
 
 ```bash
-ollama serve
+source ~/.bashrc
 ```
 
 ---
 
-### ❌ Command not found
+### ❌ Ollama not running
 
 ```bash
-source ~/.bashrc
+ollama serve
 ```
 
 ---
@@ -242,13 +237,13 @@ runai my_api chat
 
 ### ❌ Windows issues
 
-Use WSL or Git Bash.
+Use WSL or Git Bash
 
 ---
 
 # 📚 Documentation
 
-Internal details:
+Internal docs:
 
 ```
 ai-dev-env/README.md
@@ -268,22 +263,23 @@ CONTRIBUTING.md
 
 # 🔮 Roadmap
 
-* Precision mode (file-level fixes)
-* Task templates
-* Multi-agent system
-* LiteLLM routing
+- Precision mode (targeted fixes)
+- Multi-framework support (FastAPI, Node)
+- Task templates
+- Multi-agent system
+- LiteLLM routing
 
 ---
 
 # 🚀 Status
 
 ```
-LEVEL 9: Controlled Autonomous Dev System
+LEVEL 10: Plug-and-play AI Dev System
 ```
 
 ---
 
 # 💡 Philosophy
 
-> ADE is not AI code generation.
-> It is **controlled AI-assisted development**.
+> ADE is not just AI coding.
+> It is **controlled AI-assisted development** — focused on reliability, not randomness.

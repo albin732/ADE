@@ -14,10 +14,12 @@ source "$ADE_BASE/ai-dev-env/config/env.sh"
 # ✅ VALIDATION
 # =========================
 [ -z "$ADE_PROJECTS" ] && echo "❌ ADE_PROJECTS not set" && exit 1
-[ -z "$ADE_MODEL_MAIN" ] && echo "❌ Model not set" && exit 1
+
+# --- Model fallback ---
+MODEL="${ADE_MODEL_LOCAL:-$ADE_MODEL_FAST}"
 
 INPUT="$1"
-ARG="$2"
+TASK="$2"
 BASE="$ADE_PROJECTS"
 
 [ -z "$INPUT" ] && echo "Usage: runai <project> [task|chat]" && exit 1
@@ -26,15 +28,13 @@ BASE="$ADE_PROJECTS"
 # 🧠 MODE DETECTION
 # =========================
 MODE="auto"
-if [ "$ARG" == "chat" ] || [ "$ARG" == "interactive" ]; then
+if [[ "$TASK" == "chat" || "$TASK" == "interactive" ]]; then
   MODE="interactive"
+  TASK=""
 fi
 
-TASK="$ARG"
-[ "$MODE" == "interactive" ] && TASK=""
-
 # =========================
-# 📂 RESOLVE PROJECT PATH
+# 📂 RESOLVE PATH
 # =========================
 if [[ "$INPUT" == /* || "$INPUT" == ~* ]]; then
   FULL_PATH=$(realpath "$INPUT")
@@ -43,8 +43,7 @@ else
 fi
 
 if [ ! -d "$FULL_PATH" ]; then
-  echo "❌ Project does not exist: $FULL_PATH"
-  echo "👉 Use: newproj $INPUT"
+  echo "❌ Project not found: $FULL_PATH"
   exit 1
 fi
 
@@ -52,79 +51,77 @@ cd "$FULL_PATH"
 
 echo "🚀 Running in $(pwd)"
 
-# --- Ensure git ---
+# =========================
+# 🧪 ENV SETUP
+# =========================
 [ ! -d ".git" ] && git init
 
-# --- Ensure venv ---
 if [ ! -d ".venv" ]; then
-  echo "❌ .venv not found"
+  echo "❌ .venv missing. Recreate project."
   exit 1
 fi
 
 source .venv/bin/activate
 
 # =========================
-# 📁 BASE STRUCTURE (MANDATORY)
+# 📁 ENSURE BASE STRUCTURE
 # =========================
 mkdir -p tests
 touch tests/__init__.py
 
 # =========================
-# 📂 FILE COLLECTION (GENERIC)
+# 📂 FILE COLLECTION (SMART)
 # =========================
 FILES=""
 
-# --- Global persistent rules ---
+# --- Global rules ---
 FILES="$FILES $ADE_BASE/ai-dev-env/memory/global_rules.md"
 
+# --- Important files ---
 [ -f "README_AI.md" ] && FILES="$FILES README_AI.md"
 [ -f "manage.py" ] && FILES="$FILES manage.py"
 
-# --- Detect Django apps ---
+# --- Detect apps dynamically ---
 APPS=$(find . -maxdepth 2 -type d -name migrations -exec dirname {} \;)
 
 for app in $APPS; do
   FILES="$FILES $(find "$app" -maxdepth 1 -name '*.py' -type f 2>/dev/null)"
 done
 
-# --- Root files ---
+# --- Root python files ---
 FILES="$FILES $(find . -maxdepth 1 -name '*.py' -type f 2>/dev/null)"
 
 # --- Tests ---
 FILES="$FILES $(find tests -name '*.py' -type f 2>/dev/null)"
 
 # =========================
-# 🧠 MODEL ROUTING
+# 🧠 MODEL
 # =========================
-MODEL="$ADE_MODEL_MAIN"
-
-if [[ "$TASK" == *"fix"* ]] || [[ "$TASK" == *"bug"* ]] || [[ "$TASK" == *"small"* ]]; then
-  MODEL="$ADE_MODEL_FAST"
-fi
-
 echo "🧠 Model: $MODEL"
 
 # =========================
-# 🎯 TARGET APP DETECTION
+# 🎯 TARGET DETECTION (IMPROVED)
 # =========================
-TARGET_APP=$(echo "$TASK" | grep -oE "[a-zA-Z_]+" | head -n 1)
+TARGET_APP=$(echo "$TASK" | grep -oE "(core|orders|[a-z_]+)" | head -n 1)
+
+[ -z "$TARGET_APP" ] && TARGET_APP="relevant module"
 
 # =========================
-# 🔐 PERMISSION CONTROL
+# 🔐 PERMISSIONS
 # =========================
 PERMISSION_RULES=""
 
-[[ "$TASK" != *"test"* ]] && PERMISSION_RULES="$PERMISSION_RULES\n- Do NOT create test files"
+[[ "$TASK" != *"test"* ]] && PERMISSION_RULES+="\n- Do NOT create test files"
 
-[ "$ADE_ALLOW_FILE_CREATE" != "true" ] && PERMISSION_RULES="$PERMISSION_RULES\n- Do NOT create new files"
-[ "$ADE_ALLOW_BUG_FIX" != "true" ] && PERMISSION_RULES="$PERMISSION_RULES\n- Do NOT modify code"
+[ "$ADE_ALLOW_FILE_CREATE" != "true" ] && PERMISSION_RULES+="\n- Do NOT create new files"
+[ "$ADE_ALLOW_BUG_FIX" != "true" ] && PERMISSION_RULES+="\n- Do NOT modify code"
 
-PERMISSION_RULES="$PERMISSION_RULES\n- Modify only relevant files"
-PERMISSION_RULES="$PERMISSION_RULES\n- Avoid global changes unless required"
-PERMISSION_RULES="$PERMISSION_RULES\n- Do NOT modify settings.py unless required"
+PERMISSION_RULES+="\n- Modify only relevant files"
+PERMISSION_RULES+="\n- Avoid global changes"
+PERMISSION_RULES+="\n- Do NOT duplicate models, urls, AppConfig"
 
 # =========================
-# 💬 INTERACTIVE MODE
+# 💬 INTERACTIVE
 # =========================
 if [ "$MODE" == "interactive" ]; then
   echo "💬 Interactive mode"
@@ -142,29 +139,22 @@ fi
 # =========================
 echo "🤖 Auto mode"
 
-# --- Default task ---
-if [ -z "$TASK" ]; then
-  TASK="Create Django REST API with proper structure"
-fi
+[ -z "$TASK" ] && TASK="Improve project structure with best practices"
 
 INITIAL_PROMPT="$TASK
 
-STRICT RULES:
-- Only modify relevant app/files
-- Do NOT change global config unless necessary
-- Do NOT break working features
-- Do NOT duplicate:
-  - AppConfig
-  - models
-  - urls
+STRICT:
+- Work ONLY on relevant files
+- Do NOT break working code
+- Do NOT rewrite entire project
+- Minimal changes only
 
-Target:
-- Focus only on $TARGET_APP
+Focus:
+$TARGET_APP
 
 $PERMISSION_RULES
 "
 
-# --- Aider base ---
 AIDER_BASE_CMD=(
   aider
   --model "$MODEL"
@@ -183,7 +173,7 @@ AIDER_BASE_CMD=(
   $FILES
 
 # =========================
-# 🔁 SMART LOOP
+# 🔁 SMART LOOP (IMPROVED)
 # =========================
 echo "🔁 Loop mode"
 
@@ -195,7 +185,7 @@ for ((i=1; i<=3; i++)); do
   python manage.py makemigrations > /dev/null 2>&1
   python manage.py migrate > /dev/null 2>&1
 
-  python -m pytest -v > test_output.txt 2>&1
+  pytest -v > test_output.txt 2>&1
 
   if [ $? -eq 0 ]; then
     echo "✅ Tests passed"
@@ -206,30 +196,26 @@ for ((i=1; i<=3; i++)); do
   ERROR_HASH=$(echo "$ERROR_OUTPUT" | md5sum)
 
   if [ "$ERROR_HASH" == "$LAST_ERROR" ]; then
-    echo "⚠️ Same error repeating. Stopping loop."
+    echo "⚠️ Repeating error. Stopping."
     break
   fi
 
   LAST_ERROR="$ERROR_HASH"
 
-  echo "❌ Fixing error..."
+  echo "❌ Fixing..."
 
-  FIX_PROMPT="Fix ONLY the failing issue.
+  FIX_PROMPT="Fix ONLY failing issue.
 
 Error:
 $ERROR_OUTPUT
 
 STRICT:
-- Fix only root cause
+- Fix root cause only
 - Do NOT rewrite project
-- Modify only failing app/file
-- Avoid duplicate:
-  - urls
-  - models
-  - AppConfig
+- Modify minimal files
+- Avoid duplicate urls/models/apps
 
-- If change is risky:
-  - Suggest instead of modifying
+If unsure → suggest instead of modifying
 
 $PERMISSION_RULES
 "
