@@ -1,314 +1,224 @@
-# 🚀 ADE (AI Dev Environment)
+# ⚙️ ADE Internal Documentation
 
-A **controlled, local autonomous coding system** built with:
-
-- 🧠 Aider (code generation & editing)
-- 🤖 Ollama (local LLMs)
-- ⚙️ Custom orchestration scripts
-
-ADE enables **safe, test-driven AI development** with strict control over changes.
+> Technical overview of ADE internals.
+> See root README for usage.
 
 ---
 
-# 🎯 Purpose
+# 🧠 System Overview
 
-ADE is designed to:
+ADE is a script-driven orchestration system combining:
 
-- Automate backend/API development
-- Generate + test + fix code autonomously
-- Prevent unsafe global rewrites
-- Maintain deterministic, production-friendly behavior
+- Aider (editing engine)
+- Ollama (LLM backend)
+- Bash scripts (control layer)
 
 ---
 
-# 🧱 Architecture
+# 🧱 Components
 
 ```
-ADE/
-├── ai-dev-env/
-│   ├── config/        # env configs (ignored)
-│   ├── memory/        # global AI rules
-│   ├── scripts/       # core automation
-│   └── router/        # (future use)
-│
-├── projects/          # generated projects (ignored)
-│   └── .keep
-│
-├── .gitignore
-└── README.md
+ai-dev-env/
+├── config/
+├── memory/
+├── scripts/
+└── router/
+```
+
+# 📁 Projects Directory
+
+## Location
+
+```text
+ADE/projects/
 ```
 
 ---
 
-# ⚙️ Core Features
+## Purpose
 
-### 🤖 Autonomous Coding
+The `projects/` directory stores all **generated and managed applications**.
 
-- Generates Django APIs
-- Creates models, serializers, views
-- Builds test cases
+Each project is:
 
----
-
-### 🔁 Smart Loop (Self-Healing)
-
-- Runs pytest
-- Detects failures
-- Fixes only root cause
-- Stops on repeated errors
-
----
-
-### 🎯 Scoped Editing (Safe AI)
-
-- Edits only relevant files
-- Avoids breaking working code
-- Prevents full project rewrites
-
----
-
-### 🔐 Permission System
-
-Control behavior via env:
-
-```
-ADE_ALLOW_TEST_GEN=true
-ADE_ALLOW_FILE_CREATE=true
-ADE_ALLOW_BUG_FIX=true
+```text
+✔ isolated
+✔ self-contained
+✔ AI-managed
 ```
 
 ---
 
-### 🧠 Global Rule Engine
+## Structure Example
 
-Located at:
-
-```
-ai-dev-env/memory/global_rules.md
-```
-
-Ensures:
-
-- No duplicate AppConfig
-- No broken URLs
-- No partial implementations
-- Clean Django structure
-
----
-
-# 🛠 Installation
-
-## 1. Clone repo
-
-```
-git clone git@github.com:albin732/ADE.git
-cd ADE
+```text
+projects/
+└── my_api/
+    ├── config/
+    ├── core/
+    ├── orders/
+    ├── tests/
+    ├── manage.py
+    ├── requirements.txt
+    └── .venv/
 ```
 
 ---
 
-## 2. Install dependencies
+## Key Characteristics
 
-### Ollama
+- Created via:
 
-Install from: https://ollama.com
+  ```bash
+  newproj <project_name>
+  ```
 
+- Contains:
+  - Django project
+  - virtual environment (`.venv`)
+  - test suite
+  - AI-generated code
+
+---
+
+## Behavior in ADE
+
+```text
+runai → operates ONLY inside a selected project
 ```
-ollama pull qwen2.5-coder:7b
+
+- No cross-project interaction
+- Each project has independent lifecycle
+
+---
+
+## Git Behavior
+
+```text
+projects/ is ignored by Git
+```
+
+Reasons:
+
+- contains generated code
+- includes virtual environments
+- includes local databases
+- user-specific data
+
+---
+
+## Safety Rules
+
+```text
+✔ runai MUST NOT create project implicitly
+✔ project must exist before execution
+✔ no modification outside selected project
 ```
 
 ---
 
-### Aider
+## Design Intent
 
-```
-pip install aider-chat
-```
+The `projects/` folder ensures:
 
----
-
-## 3. Setup environment
-
-```
-cp ai-dev-env/config/env.sample.sh ai-dev-env/config/env.sh
-```
-
-Edit values inside `env.sh`.
-
----
-
-## 4. Add aliases
-
-Add to `~/.bashrc`:
-
-```
-export ADE_BASE="$HOME/path/to/ADE"
-source "$ADE_BASE/ai-dev-env/config/env.sh"
-
-runai() {
-  $ADE_BASE/ai-dev-env/scripts/run_aider.sh "$@"
-}
-
-newproj() {
-  $ADE_BASE/ai-dev-env/scripts/create_project.sh "$1"
-}
-```
-
-```
-source ~/.bashrc
+```text
+✔ isolation of generated code
+✔ reproducible workflows
+✔ clean repository (no generated files tracked)
 ```
 
 ---
 
-# 🚀 Usage
-
-## 📦 Create project
+# ⚙️ Execution Flow
 
 ```
-newproj my_api
+runai → run_aider.sh → aider → code → pytest → fix loop
 ```
 
 ---
 
-## 🤖 Run AI
+# 📂 File Selection
 
-```
-runai my_api
-```
-
----
-
-## 🎯 Run specific task
-
-```
-runai my_api "create Order API in orders app"
-```
+- global_rules.md
+- project Python files
+- detected Django apps
+- root configs
+- tests
 
 ---
 
-## 💬 Interactive mode
+# 🔁 Smart Loop
 
 ```
-runai my_api chat
+run → test → fail → fix → repeat (max 3)
 ```
 
 ---
 
-# 🧪 Testing
+# 🔐 Permissions
+
+Controlled via env:
 
 ```
-cd projects/my_api
-source .venv/bin/activate
-pytest -v
-```
-
----
-
-# 📁 Projects Folder
-
-`projects/` is **ignored by Git**.
-
-Contains:
-
-- Generated code
-- Virtual environments
-- Databases
-
-This keeps the repo clean and lightweight.
-
----
-
-# 🔐 Environment Files
-
-Real env file is ignored:
-
-```
-ai-dev-env/config/env.sh
-```
-
-Use sample:
-
-```
-ai-dev-env/config/env.sample.sh
+ADE_ALLOW_TEST_GEN
+ADE_ALLOW_FILE_CREATE
+ADE_ALLOW_BUG_FIX
 ```
 
 ---
 
-# ⚠️ Design Principles
+# 🧠 Rules Engine
 
-- ❌ No blind generation
-
-- ❌ No global rewrites
-
-- ❌ No duplicate structures
-
-- ✅ Minimal edits
-
-- ✅ Test-driven fixes
-
-- ✅ App-level isolation
-
-- ✅ Deterministic behavior
-
----
-
-# 📁 Key Scripts
-
-### run_aider.sh
-
-- Executes AI tasks
-- Handles loop + fixes
-- Enforces rules
-
----
-
-### create_project.sh
-
-- Creates Django project
-- Sets up environment
-
----
-
-### env.sh
-
-- Central configuration
-- Models + permissions
-
----
-
-# 🔮 Roadmap
-
-- Precision mode (file-level edits)
-- Task templates
-- Multi-agent system
-- LiteLLM routing
-- Debug dashboard
-
----
-
-# 🚀 Current Status
+File:
 
 ```
-LEVEL 8: Controlled Autonomous Dev System
+memory/global_rules.md
+```
+
+Prevents:
+
+- duplicate AppConfig
+- duplicate models
+- broken URLs
+
+---
+
+# 📦 Project Creation
+
+Handled by:
+
+```
+scripts/create_project.sh
 ```
 
 ---
 
-# 🤝 Contributing
+# 🔀 Router (Optional)
 
-- Keep changes minimal
-- Follow global rules
-- Avoid breaking structure
+```
+scripts/start_router.sh
+```
 
----
-
-# 📜 License
-
-MIT
+Used for multi-model routing.
 
 ---
 
-# 💡 Note
+# ⚠️ Constraints
 
-ADE is not just AI coding —
-it’s a **controlled development system** built for reliability.
+- no global rewrites
+- no hardcoded paths
+- no cross-app edits
+
+---
+
+# 🔮 Future
+
+- precision mode
+- AST validation
+- multi-agent system
+
+---
+
+# 🧠 Philosophy
+
+LLM output is constrained, validated, and test-driven.
