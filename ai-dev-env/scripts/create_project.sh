@@ -23,7 +23,7 @@ fi
 PROJECT_NAME="$1"
 shift
 
-TYPE="django"   # default
+TYPE="django"
 
 while [[ "$#" -gt 0 ]]; do
   case $1 in
@@ -45,10 +45,7 @@ if [ -z "$PROJECT_NAME" ]; then
   exit 1
 fi
 
-if [ -z "$ADE_PROJECTS" ]; then
-  echo "❌ ADE_PROJECTS not set"
-  exit 1
-fi
+[ -z "$ADE_PROJECTS" ] && echo "❌ ADE_PROJECTS not set" && exit 1
 
 PROJECT_PATH="$ADE_PROJECTS/$PROJECT_NAME"
 
@@ -56,14 +53,15 @@ echo "🚀 Creating project: $PROJECT_NAME"
 echo "🧠 Type: $TYPE"
 
 # =========================
-# 📁 Create directory
+# 📁 Create directory safely
 # =========================
-mkdir -p "$PROJECT_PATH"
-
-cd "$PROJECT_PATH" || {
-  echo "❌ Failed to enter project directory"
+if [ -d "$PROJECT_PATH" ]; then
+  echo "⚠️ Project already exists: $PROJECT_PATH"
   exit 1
-}
+fi
+
+mkdir -p "$PROJECT_PATH"
+cd "$PROJECT_PATH" || exit 1
 
 # --- Safety check ---
 if [[ "$(pwd)" == "$HOME" ]]; then
@@ -76,6 +74,8 @@ fi
 # =========================
 python3 -m venv .venv
 source .venv/bin/activate
+
+pip install --upgrade pip
 
 # =========================
 # 📦 Framework switch
@@ -95,19 +95,25 @@ case "$TYPE" in
     touch tests/__init__.py
 
     rm -rf core/tests 2>/dev/null
-    rm core/tests.py 2>/dev/null
+    rm -f core/tests.py 2>/dev/null
     ;;
 
   *)
     echo "❌ Unknown project type: $TYPE"
-    echo "👉 Supported: django (more coming soon)"
     exit 1
     ;;
 
 esac
 
 # =========================
-# 🧠 AI Context
+# 🧠 COPY GLOBAL RULES (CRITICAL FIX)
+# =========================
+if [ -f "$ADE_BASE/ai-dev-env/memory/global_rules.md" ]; then
+  cp "$ADE_BASE/ai-dev-env/memory/global_rules.md" .ai-rules.md
+fi
+
+# =========================
+# 🧠 AI CONTEXT
 # =========================
 cat <<EOF > .ai-context.md
 # Project Context
@@ -115,34 +121,32 @@ cat <<EOF > .ai-context.md
 ## Type
 $TYPE
 
-## Tech Stack
-- Python
-- $TYPE
-
 ## Goal
-Build a clean, production-ready backend with tests.
+Build a clean, production-ready backend.
 
 ## Rules
-- Keep code simple and readable
+- Keep code minimal and readable
 - Follow best practices
-- Always write tests
-- Avoid unnecessary changes
+- Do NOT create dummy models
+- Do NOT generate placeholder code
+- Always write meaningful tests
 EOF
 
 # =========================
-# 📄 README for AI
+# 📄 README FOR AI
 # =========================
 cat <<EOF > README_AI.md
 # AI Instructions
 
-- Follow project structure
-- Write minimal and clean code
-- Always include tests
+- Work only inside project
+- Modify only relevant files
 - Do NOT rewrite entire project
+- Do NOT create fake implementations
+- Always write real test cases
 EOF
 
 # =========================
-# 🧪 Pytest config
+# 🧪 PYTEST CONFIG
 # =========================
 cat <<EOF > pytest.ini
 [pytest]
@@ -151,18 +155,24 @@ python_files = tests.py test_*.py *_tests.py
 EOF
 
 # =========================
-# 📦 Freeze deps
+# 🔧 GIT INIT
+# =========================
+git init
+
+cat <<EOF > .gitignore
+.venv
+__pycache__
+*.pyc
+db.sqlite3
+EOF
+
+# =========================
+# 📦 FREEZE DEPS
 # =========================
 pip freeze > requirements.txt
 
 # =========================
-# 🔧 Git init
-# =========================
-git init
-echo ".venv" >> .gitignore
-
-# =========================
-# ✅ Done
+# ✅ DONE
 # =========================
 echo ""
 echo "✅ Project $PROJECT_NAME ready!"

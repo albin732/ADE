@@ -1,25 +1,73 @@
-# --- Environment files ---
+# =========================
+# ENV / SECRETS
+# =========================
 ai-dev-env/config/env.sh
 .env
 .env.*
+*.env
 
-# --- Python ---
+# =========================
+# PYTHON
+# =========================
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 
-# --- Virtual envs ---
+# =========================
+# VIRTUAL ENVS
+# =========================
 .venv/
 venv/
+env/
 
-# --- Aider ---
+# =========================
+# DJANGO
+# =========================
+db.sqlite3
+media/
+staticfiles/
+*.log
+
+# =========================
+# TEST / CACHE
+# =========================
+.pytest_cache/
+.coverage
+htmlcov/
+
+# =========================
+# IDE / EDITOR
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# OS FILES
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# AIDER / AI ARTIFACTS
+# =========================
 .aider*
 .aider.chat.history.md
+.ai-context.md
+README_AI.md
 
-# --- OS ---
-.DS_Store
+# ❗ VERY IMPORTANT (your current issue)
+SEARCH/REPLACE*
+*.patch
 
-# --- ADE Projects (generated) ---
+# =========================
+# TEMP / DEBUG FILES
+# =========================
+*.tmp
+*.bak
+*.swp
+
+# =========================
+# OPTIONAL (YOUR SETUP)
+# =========================
 projects/
-
-# --- Optional: allow placeholder ---
 !projects/.keep
